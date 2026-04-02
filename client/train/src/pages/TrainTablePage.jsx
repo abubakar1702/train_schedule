@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FaSearch } from 'react-icons/fa'
+import { FaSearch, FaSms } from 'react-icons/fa'
+
+const formatTime = (timeStr) => {
+  if (!timeStr || !timeStr.includes(':')) return timeStr;
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return timeStr;
+  
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const h12 = hours % 12 || 12;
+  return `${h12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+};
 
 export default function TrainTablePage() {
   const [rows, setRows] = useState([])
@@ -85,6 +95,7 @@ export default function TrainTablePage() {
                       <th className="px-6 py-4">Departure</th>
                       <th className="px-6 py-4">Arrival</th>
                       <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4">Track</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -95,12 +106,23 @@ export default function TrainTablePage() {
                         <td className="px-6 py-4">
                            <span className="text-slate-900">{row.from}</span> <span className="text-slate-400 mx-1">&rarr;</span> <span className="text-slate-900">{row.to}</span>
                         </td>
-                        <td className="px-6 py-4">{row.departure}</td>
-                        <td className="px-6 py-4">{row.arrival}</td>
+                        <td className="px-6 py-4 font-semibold text-slate-900">{formatTime(row.departure)}</td>
+                        <td className="px-6 py-4 font-semibold text-slate-900">{formatTime(row.arrival)}</td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.offDay === 'None' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                             {row.offDay === 'None' ? 'Active' : `Off ${row.offDay.substring(0,3)}`}
                           </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="group relative inline-block">
+                            <a href={`sms:16318?body=TR%20${row.trainNo}`} className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 text-indigo-500 hover:bg-indigo-500 hover:text-white transition">
+                              <FaSms />
+                            </a>
+                            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-slate-900 p-3 text-xs text-white opacity-0 shadow-xl transition group-hover:opacity-100 pointer-events-none z-10">
+                              <p className="font-semibold text-indigo-300 mb-1">Live Tracking</p>
+                              Send <strong className="text-white">TR {row.trainNo}</strong> to <strong className="text-white">16318</strong>
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     ))}

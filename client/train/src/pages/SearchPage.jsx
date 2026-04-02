@@ -1,6 +1,39 @@
 import { useEffect, useMemo, useState } from 'react'
 import { HiArrowsRightLeft } from 'react-icons/hi2'
-import { FaClock, FaMapMarkerAlt, FaDirections, FaInfoCircle, FaTrain, FaSearch, FaCalendarAlt, FaRoute } from 'react-icons/fa'
+import { FaClock, FaMapMarkerAlt, FaDirections, FaInfoCircle, FaTrain, FaSearch, FaCalendarAlt, FaRoute, FaLocationArrow, FaSms } from 'react-icons/fa'
+
+const isTrainMissed = (departureTimeStr, selectedDateStr) => {
+  if (!departureTimeStr || !departureTimeStr.includes(':')) return false;
+  
+  const now = new Date();
+  
+  if (selectedDateStr) {
+    const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    if (selectedDateStr < todayStr) return true;
+    if (selectedDateStr > todayStr) return false;
+  }
+  
+  const [hours, minutes] = departureTimeStr.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return false;
+  
+  const currentHours = now.getHours();
+  const currentMinutes = now.getMinutes();
+  
+  if (currentHours > hours) return true;
+  if (currentHours === hours && currentMinutes >= minutes) return true;
+  
+  return false;
+};
+
+const formatTime = (timeStr) => {
+  if (!timeStr || !timeStr.includes(':')) return timeStr;
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return timeStr;
+  
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const h12 = hours % 12 || 12;
+  return `${h12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+};
 
 export default function SearchPage() {
   const [stations, setStations] = useState([])
@@ -317,11 +350,12 @@ export default function SearchPage() {
             {trains.map((train) => {
               const routeStopCount = Math.max((train.route || []).length - 2, 0)
               const isAvailable = train.offDay.toLowerCase() !== new Date().toLocaleString('en-US', { weekday: 'long' }).toLowerCase()
+              const hasPassed = isTrainMissed(train.departure, travelDate)
                 
               return (
                 <li
                   key={train.id}
-                  className={`group relative overflow-hidden rounded-3xl border p-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${isAvailable ? 'border-slate-200 bg-white hover:border-blue-300' : 'border-amber-200 bg-amber-50/50 grayscale-[20%]'}`}
+                  className={`group relative overflow-hidden rounded-3xl border p-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${!isAvailable ? 'border-amber-200 bg-amber-50/50 grayscale-[20%]' : hasPassed ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white hover:border-blue-300'}`}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50/50 z-0"></div>
                   
@@ -338,10 +372,15 @@ export default function SearchPage() {
                       </div>
                       
                       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
-                        <div className="flex items-center gap-4 text-sm font-medium">
+                        <div className="flex items-center gap-4 text-sm font-medium flex-wrap">
                           <span className={`${isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'} rounded-full px-3 py-1`}>
                             {train.offDay === 'None' ? 'Runs Daily' : `Off: ${train.offDay}`}
                           </span>
+                          {isAvailable && hasPassed && (
+                            <span className="bg-rose-100 text-rose-700 rounded-full px-3 py-1 border border-rose-200">
+                              Departed
+                            </span>
+                          )}
                           <span className="text-slate-500"><FaClock className="inline mr-1 text-slate-400"/> {routeStopCount} intermediate stops</span>
                         </div>
                       </div>
@@ -349,8 +388,8 @@ export default function SearchPage() {
 
                     <div className="flex md:flex-col justify-between items-center md:items-end gap-4 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 min-w-[200px]">
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-slate-900 tracking-tight">{train.departure} <span className="text-sm font-semibold text-slate-400 uppercase">DEP</span></div>
-                        <div className="text-sm font-semibold text-slate-500 mt-1">{train.arrival} <span className="text-xs uppercase">ARR</span></div>
+                        <div className="text-2xl font-bold text-slate-900 tracking-tight">{formatTime(train.departure)} <span className="text-sm font-semibold text-slate-400 uppercase">DEP</span></div>
+                        <div className="text-sm font-semibold text-slate-500 mt-1">{formatTime(train.arrival)} <span className="text-xs uppercase">ARR</span></div>
                       </div>
                       <button
                         type="button"
@@ -382,7 +421,7 @@ export default function SearchPage() {
               <div className="flex justify-between items-center mb-6 rounded-2xl bg-slate-50 p-4 border border-slate-100">
                 <div className="text-center">
                   <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Departure</div>
-                  <div className="text-xl font-bold text-slate-900">{selectedTrain.departure}</div>
+                  <div className="text-xl font-bold text-slate-900">{formatTime(selectedTrain.departure)}</div>
                   <div className="text-sm font-medium text-slate-600 mt-1">{selectedTrain.from}</div>
                 </div>
                 <div className="flex-1 px-4 flex items-center justify-center text-slate-300">
@@ -392,7 +431,7 @@ export default function SearchPage() {
                 </div>
                 <div className="text-center">
                   <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Arrival</div>
-                  <div className="text-xl font-bold text-slate-900">{selectedTrain.arrival}</div>
+                  <div className="text-xl font-bold text-slate-900">{formatTime(selectedTrain.arrival)}</div>
                   <div className="text-sm font-medium text-slate-600 mt-1">{selectedTrain.to}</div>
                 </div>
               </div>
@@ -420,11 +459,24 @@ export default function SearchPage() {
                 })()}
               </div>
 
-              <div className="mt-8 flex justify-end">
+              <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-3 w-full sm:w-auto">
+                  <div className="flex items-start gap-3">
+                    <FaSms className="text-indigo-500 text-lg mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-indigo-900 uppercase">Live Tracking</p>
+                      <p className="text-xs font-medium text-indigo-700 mt-0.5">Send SMS <strong className="bg-indigo-100 px-1.5 py-0.5 rounded text-indigo-900">TR {selectedTrain.trainNo}</strong> to <strong className="text-indigo-900">16318</strong></p>
+                      <a href={`sms:16318?body=TR%20${selectedTrain.trainNo}`} className="inline-block mt-2 text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1.5 rounded-lg transition sm:hidden">
+                        Open SMS App
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setSelectedTrain(null)}
-                  className="rounded-xl bg-slate-100 px-6 py-2.5 font-semibold text-slate-700 transition hover:bg-slate-200"
+                  className="rounded-xl bg-slate-100 px-6 py-3 font-semibold text-slate-700 transition hover:bg-slate-200 w-full sm:w-auto"
                 >
                   Close Route View
                 </button>
