@@ -2,29 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { HiArrowsRightLeft } from 'react-icons/hi2'
 import { FaClock, FaMapMarkerAlt, FaDirections, FaInfoCircle, FaTrain, FaSearch, FaCalendarAlt, FaRoute, FaLocationArrow, FaSms } from 'react-icons/fa'
 
-const isTrainMissed = (departureTimeStr, selectedDateStr) => {
-  if (!departureTimeStr || !departureTimeStr.includes(':')) return false;
-  
-  const now = new Date();
-  
-  if (selectedDateStr) {
-    const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-    if (selectedDateStr < todayStr) return true;
-    if (selectedDateStr > todayStr) return false;
-  }
-  
-  const [hours, minutes] = departureTimeStr.split(':').map(Number);
-  if (isNaN(hours) || isNaN(minutes)) return false;
-  
-  const currentHours = now.getHours();
-  const currentMinutes = now.getMinutes();
-  
-  if (currentHours > hours) return true;
-  if (currentHours === hours && currentMinutes >= minutes) return true;
-  
-  return false;
-};
-
 const formatTime = (timeStr) => {
   if (!timeStr || !timeStr.includes(':')) return timeStr;
   const [hours, minutes] = timeStr.split(':').map(Number);
@@ -350,12 +327,11 @@ export default function SearchPage() {
             {trains.map((train) => {
               const routeStopCount = Math.max((train.route || []).length - 2, 0)
               const isAvailable = train.offDay.toLowerCase() !== new Date().toLocaleString('en-US', { weekday: 'long' }).toLowerCase()
-              const hasPassed = isTrainMissed(train.departure, travelDate)
                 
               return (
                 <li
                   key={train.id}
-                  className={`group relative overflow-hidden rounded-3xl border p-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${!isAvailable ? 'border-amber-200 bg-amber-50/50 grayscale-[20%]' : hasPassed ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white hover:border-blue-300'}`}
+                  className={`group relative overflow-hidden rounded-3xl border p-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${!isAvailable ? 'border-amber-200 bg-amber-50/50 grayscale-[20%]' : 'border-slate-200 bg-white hover:border-blue-300'}`}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50/50 z-0"></div>
                   
@@ -376,11 +352,6 @@ export default function SearchPage() {
                           <span className={`${isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'} rounded-full px-3 py-1`}>
                             {train.offDay === 'None' ? 'Runs Daily' : `Off: ${train.offDay}`}
                           </span>
-                          {isAvailable && hasPassed && (
-                            <span className="bg-rose-100 text-rose-700 rounded-full px-3 py-1 border border-rose-200">
-                              Departed
-                            </span>
-                          )}
                           <span className="text-slate-500"><FaClock className="inline mr-1 text-slate-400"/> {routeStopCount} intermediate stops</span>
                         </div>
                       </div>
