@@ -24,7 +24,7 @@ export default function TrainTablePage() {
       try {
         setLoading(true)
         setError('')
-        const res = await fetch('/api/schedules/')
+        const res = await fetch(`/api/schedules/?q=${encodeURIComponent(query)}`)
         if (!res.ok) throw new Error('Failed')
         const data = await res.json()
         setRows(data.results || [])
@@ -34,24 +34,17 @@ export default function TrainTablePage() {
         setLoading(false)
       }
     }
-    load()
-  }, [])
+    const timeoutId = setTimeout(() => {
+      load();
+    }, 400);
+    return () => clearTimeout(timeoutId);
+  }, [query])
 
-  const filteredRows = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return rows
-    return rows.filter((row) =>
-      [row.trainName, row.trainNo, row.from, row.to]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(q)),
-    )
-  }, [rows, query])
-
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize))
   const pageRows = useMemo(() => {
     const start = (page - 1) * pageSize
-    return filteredRows.slice(start, start + pageSize)
-  }, [filteredRows, page])
+    return rows.slice(start, start + pageSize)
+  }, [rows, page])
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:py-12">
@@ -94,8 +87,7 @@ export default function TrainTablePage() {
                       <th className="px-6 py-4">Route</th>
                       <th className="px-6 py-4">Departure</th>
                       <th className="px-6 py-4">Arrival</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Track</th>
+                      <th className="px-6 py-4">Off Day</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -109,20 +101,9 @@ export default function TrainTablePage() {
                         <td className="px-6 py-4 font-semibold text-slate-900">{formatTime(row.departure)}</td>
                         <td className="px-6 py-4 font-semibold text-slate-900">{formatTime(row.arrival)}</td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.offDay === 'None' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                            {row.offDay === 'None' ? 'Active' : `Off ${row.offDay.substring(0,3)}`}
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.offDay === 'None' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                            {row.offDay}
                           </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="group relative inline-block">
-                            <a href={`sms:16318?body=TR%20${row.trainNo}`} className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 text-indigo-500 hover:bg-indigo-500 hover:text-white transition">
-                              <FaSms />
-                            </a>
-                            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-slate-900 p-3 text-xs text-white opacity-0 shadow-xl transition group-hover:opacity-100 pointer-events-none z-10">
-                              <p className="font-semibold text-indigo-300 mb-1">Live Tracking</p>
-                              Send <strong className="text-white">TR {row.trainNo}</strong> to <strong className="text-white">16318</strong>
-                            </div>
-                          </div>
                         </td>
                       </tr>
                     ))}
@@ -130,12 +111,12 @@ export default function TrainTablePage() {
                 </table>
               </div>
               
-              {filteredRows.length === 0 ? (
+              {rows.length === 0 ? (
                  <div className="text-center py-10 text-slate-500 font-medium">No trains matched your search query.</div>
               ) : (
                 <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <span className="text-sm font-semibold text-slate-500">
-                    Showing <span className="text-slate-900">{((page - 1) * pageSize) + 1}</span> to <span className="text-slate-900">{Math.min(page * pageSize, filteredRows.length)}</span> of <span className="text-slate-900">{filteredRows.length}</span> results
+                    Showing <span className="text-slate-900">{((page - 1) * pageSize) + 1}</span> to <span className="text-slate-900">{Math.min(page * pageSize, rows.length)}</span> of <span className="text-slate-900">{rows.length}</span> results
                   </span>
                   
                   <div className="flex gap-2">

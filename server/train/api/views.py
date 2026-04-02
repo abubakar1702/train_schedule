@@ -3,6 +3,7 @@ from datetime import datetime
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_http_methods
+from django.db.models import Q
 
 from .models import DatasetMetadata, RouteSummary, Station, TrainSchedule, TrainStop
 
@@ -123,7 +124,15 @@ def train_list(request):
 @require_http_methods(["GET", "POST"])
 def train_collection(request):
     if request.method == "GET":
+        q = request.GET.get("q", "").strip()
         trains = TrainSchedule.objects.prefetch_related("stops").all()
+        if q:
+            trains = trains.filter(
+                Q(train_name__icontains=q) |
+                Q(train_no__icontains=q) |
+                Q(from_station__icontains=q) |
+                Q(to_station__icontains=q)
+            )
         payload = [
             {
                 "id": train.id,
