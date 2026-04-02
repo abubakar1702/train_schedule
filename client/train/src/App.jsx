@@ -60,8 +60,17 @@ function SearchPage() {
       return []
     }
 
-    const fromIndex = route.findIndex((station) => station === from)
-    const toIndex = route.findIndex((station) => station === to)
+    const normalize = (value) =>
+      value
+        .toLowerCase()
+        .trim()
+        .replace(/[-_]/g, ' ')
+        .replace(/\s+/g, ' ')
+    const fromValue = normalize(from)
+    const toValue = normalize(to)
+
+    const fromIndex = route.findIndex((station) => normalize(station) === fromValue)
+    const toIndex = route.findIndex((station) => normalize(station) === toValue)
 
     if (fromIndex === -1 || toIndex === -1 || fromIndex >= toIndex) {
       return []
@@ -310,7 +319,7 @@ function SearchPage() {
               {trains.map((train) => {
                 const isAvailable = train.offDay.toLowerCase() !== new Date().toLocaleString('en-US', { weekday: 'long' }).toLowerCase()
                 const statusColor = isAvailable ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'
-                const routeStopCount = (train.route || []).length
+                const routeStopCount = Math.max((train.route || []).length - 2, 0)
 
                 return (
                   <li
@@ -335,7 +344,7 @@ function SearchPage() {
                     </div>
 
                     <div className="mt-3 flex items-center justify-between">
-                      <span className="text-xs text-slate-500">Stops: {routeStopCount}</span>
+                      <span className="text-xs text-slate-500">Intermediate stops: {routeStopCount}</span>
                       <button
                         type="button"
                         onClick={() => setSelectedTrain(train)}
@@ -404,6 +413,7 @@ function TrainTablePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [page, setPage] = useState(1)
+  const [query, setQuery] = useState('')
   const pageSize = 10
 
   useEffect(() => {
@@ -424,17 +434,43 @@ function TrainTablePage() {
     load()
   }, [])
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize))
+  const filteredRows = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter((row) =>
+      [row.trainName, row.trainNo, row.from, row.to]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(q)),
+    )
+  }, [rows, query])
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const pageRows = useMemo(() => {
     const start = (page - 1) * pageSize
-    return rows.slice(start, start + pageSize)
-  }, [rows, page])
+    return filteredRows.slice(start, start + pageSize)
+  }, [filteredRows, page])
 
   return (
     <main className="px-4 py-8">
       <div className="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-        <h2 className="text-xl font-semibold">All Train Information</h2>
-        <p className="mt-1 text-sm text-slate-600">Table view with pagination</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">All Train Information</h2>
+            <p className="mt-1 text-sm text-slate-600">Table view with pagination</p>
+          </div>
+          <div className="w-full sm:w-72">
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setPage(1)
+              }}
+              placeholder="Search train, number, route"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-900"
+            />
+          </div>
+        </div>
 
         {loading ? <p className="mt-4 text-sm text-slate-600">Loading...</p> : null}
         {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
