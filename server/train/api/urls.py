@@ -7,6 +7,7 @@ from .views import (
     train_collection,
     train_detail,
     train_list,
+    metro_info,
 )
 
 urlpatterns = [
@@ -16,4 +17,5 @@ urlpatterns = [
     path("trains/", train_list, name="train-list"),
     path("schedules/", train_collection, name="train-collection"),
     path("schedules/<slug:train_id>/", train_detail, name="train-detail"),
+    path("metro/", metro_info, name="metro-info"),
 ]

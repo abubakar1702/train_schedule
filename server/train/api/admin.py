@@ -1,7 +1,9 @@
 from django.contrib import admin
 
-from .models import DatasetMetadata, RouteSummary, Station, TrainSchedule, TrainStop
-
+from .models import (
+    DatasetMetadata, RouteSummary, Station, TrainSchedule, TrainStop,
+    MetroSystem, MetroStation
+)
 
 @admin.register(DatasetMetadata)
 class DatasetMetadataAdmin(admin.ModelAdmin):
@@ -69,3 +71,13 @@ class TrainStopAdmin(admin.ModelAdmin):
 class RouteSummaryAdmin(admin.ModelAdmin):
     list_display = ("route", "distance_km", "journey_time")
     search_fields = ("route",)
+
+@admin.register(MetroSystem)
+class MetroSystemAdmin(admin.ModelAdmin):
+    list_display = ("name", "line", "operator", "status")
+
+@admin.register(MetroStation)
+class MetroStationAdmin(admin.ModelAdmin):
+    list_display = ("number", "name", "role", "system")
+    list_filter = ("system",)
+    ordering = ("system", "number")

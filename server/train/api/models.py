@@ -77,3 +77,37 @@ class RouteSummary(models.Model):
 
     def __str__(self):
         return self.route
+
+
+class MetroSystem(models.Model):
+    name = models.CharField(max_length=150)
+    line = models.CharField(max_length=100)
+    operator = models.CharField(max_length=150)
+    route = models.CharField(max_length=150)
+    total_length_km = models.DecimalField(max_digits=5, decimal_places=2)
+    total_stations = models.IntegerField()
+    status = models.CharField(max_length=200)
+    
+    schedule = models.JSONField(default=dict, blank=True)
+    ticket_info = models.JSONField(default=dict, blank=True)
+    
+    source = models.CharField(max_length=200, blank=True, default="")
+    last_updated = models.CharField(max_length=50, blank=True, default="")
+
+    def __str__(self):
+        return self.name
+
+
+class MetroStation(models.Model):
+    system = models.ForeignKey(MetroSystem, on_delete=models.CASCADE, related_name='stations')
+    number = models.IntegerField()
+    name = models.CharField(max_length=100)
+    role = models.CharField(max_length=150, blank=True, default="")
+    toward_motijheel = models.JSONField(default=dict, blank=True)
+    toward_uttara_north = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["number"]
+
+    def __str__(self):
+        return f"{self.number}. {self.name}"

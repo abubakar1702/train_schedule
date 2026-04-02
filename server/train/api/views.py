@@ -281,3 +281,41 @@ def route_summary_list(request):
         for route in routes
     ]
     return JsonResponse({"count": len(payload), "results": payload})
+
+
+from .models import MetroSystem
+
+@require_GET
+def metro_info(request):
+    system = MetroSystem.objects.first()
+    if not system:
+        return JsonResponse({"detail": "Metro data not available"}, status=404)
+        
+    stations = system.stations.all()
+    
+    payload = {
+        "metro_rail": {
+            "name": system.name,
+            "line": system.line,
+            "operator": system.operator,
+            "route": system.route,
+            "total_length_km": float(system.total_length_km),
+            "total_stations": system.total_stations,
+            "status": system.status
+        },
+        "schedule": system.schedule,
+        "ticket_info": system.ticket_info,
+        "source": system.source,
+        "last_updated": system.last_updated,
+        "stations": [
+            {
+                "number": st.number,
+                "name": st.name,
+                "role": st.role,
+                "toward_motijheel": st.toward_motijheel,
+                "toward_uttara_north": st.toward_uttara_north
+            }
+            for st in stations
+        ]
+    }
+    return JsonResponse(payload)
